@@ -1,0 +1,249 @@
+{
+  "name": "Ask GPT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-aroundtally",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        60
+      ],
+      "id": "2ea95629-cc05-432f-8ef5-9aaa0259a22b",
+      "webhookId": "adf1afd6-0951-491a-b652-badbe71d79f1"
+    },
+    {
+      "parameters": {
+        "functionCode": "const webhookData = $('Webhook').first().json;\nconst body = webhookData.body || {};\n\nconst question = body.question || '';\nconst cleanQuestion = question.trim();\n\nif (!cleanQuestion || cleanQuestion.length < 3) {\n    return [{\n        json: {\n            error: 'INVALID_QUESTION',\n            message: 'Please provide a valid question',\n            statusCode: 400\n        }\n    }];\n}\n\nconst faqData = $('Postgres').all();\nlet contextInfo = '';\nlet hasRelevantFAQ = false;\nlet relevantFAQs = [];\n\nif (faqData && faqData.length > 0) {\n    // Try to find relevant FAQs using keyword matching\n    const questionWords = cleanQuestion.toLowerCase().split(' ').filter(word => word.length > 2);\n    \n    relevantFAQs = faqData.filter(item => {\n        const faqText = (item.json.question + ' ' + item.json.answer).toLowerCase();\n        return questionWords.some(word => faqText.includes(word));\n    });\n\n    if (relevantFAQs.length > 0) {\n        // Found relevant FAQs - VERIFIED\n        hasRelevantFAQ = true;\n        contextInfo = relevantFAQs.slice(0, 3).map(item => {\n            return 'FAQ: ' + item.json.question + ' -> ' + item.json.answer;\n        }).join('\\n');\n        \n        console.log('Found relevant FAQs - VERIFIED answer');\n        console.log('Matching FAQs:', relevantFAQs.length);\n    } else {\n        // No relevant FAQs found - UNVERIFIED\n        hasRelevantFAQ = false;\n        contextInfo = 'No relevant FAQ found. Use general Tally knowledge.';\n        \n        console.log('No relevant FAQs found - UNVERIFIED answer');\n    }\n} else {\n    // No FAQ data at all - UNVERIFIED\n    hasRelevantFAQ = false;\n    contextInfo = 'No FAQ database available. Use general Tally knowledge.';\n    \n    console.log('No FAQ database - UNVERIFIED answer');\n}\n\nconst systemPrompt = 'You are a Tally expert. Answer the user question directly and specifically based on the provided context.';\n\nconst userPrompt = 'USER QUESTION: ' + cleanQuestion + '\\n\\nContext Information:\\n' + contextInfo + '\\n\\nPROVIDE ANSWER FOR: ' + cleanQuestion + '\\n\\nAnswer:';\n\nconsole.log('Question:', cleanQuestion);\nconsole.log('Total FAQ entries:', faqData ? faqData.length : 0);\nconsole.log('Relevant FAQs found:', relevantFAQs.length);\nconsole.log('Final verification status:', hasRelevantFAQ ? 'VERIFIED' : 'UNVERIFIED');\n\nreturn [{\n    json: {\n        question: cleanQuestion,\n        systemPrompt: systemPrompt,\n        userPrompt: userPrompt,\n        securityPassed: true,\n        hasRelevantFAQ: hasRelevantFAQ\n    }\n}];"
+      },
+      "name": "Format Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        20,
+        100
+      ],
+      "id": "cf0832ca-f589-4e55-afa1-4514c835b0e7"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "answer",
+              "value": "={{ $json.content || $json.message?.content || $json.choices?.[0]?.message?.content || \"No response\" }}"
+            },
+            {
+              "name": "source",
+              "value": "AI Retrieved from FAQ"
+            }
+          ],
+          "boolean": [
+            {
+              "name": "verified",
+              "value": "=={{ $('Format Prompt').first().json.hasRelevantFAQ }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set Answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        740,
+        80
+      ],
+      "id": "236cbf48-5c13-4f5a-b87a-424edf4079ba"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"answer\": {{ JSON.stringify($json.answer) }},\n  \"verified\": {{ $json.verified }}\n}",
+        "options": {}
+      },
+      "name": "Return Answer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        940,
+        60
+      ],
+      "id": "0b4107f6-719f-4a88-a46a-c8205c7adde0"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=={{$('Format Prompt').first().json.systemPrompt}}\n\n",
+              "role": "system"
+            },
+            {
+              "content": "=={{$('Format Prompt').first().json.userPrompt}}"
+            },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        400,
+        80
+      ],
+      "id": "81bfbbbb-5e28-4ed7-a983-5c4a72592b0f",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "QuqtwANeAM4o17FF",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT question, answer FROM public.faq;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -200,
+        60
+      ],
+      "id": "6f2978a4-6e2f-41fb-a9b6-13aad17f5e71",
+      "name": "Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "dEEEXTGKEIf2VMMa",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Format Prompt').first().json;\nconsole.log('Question:', data.question);\nconsole.log('Has systemPrompt:', !!data.systemPrompt);\nconsole.log('Has userPrompt:', !!data.userPrompt);\nreturn [$input.first()];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        100
+      ],
+      "id": "a52703b1-e367-4e92-9d23-912b0fb21b05",
+      "name": "Debug"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Answer": {
+      "main": [
+        [
+          {
+            "node": "Return Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Prompt": {
+      "main": [
+        [
+          {
+            "node": "Debug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Set Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres": {
+      "main": [
+        [
+          {
+            "node": "Format Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debug": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14b592b7-2dbc-4a31-82f3-c85396559773",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "80f3cf5b2e55881e165a3b6d668978e117afd4889dca181739e13d09ee0eee26"
+  },
+  "id": "iENHelpBXv6DUgcq",
+  "tags": []
+}
