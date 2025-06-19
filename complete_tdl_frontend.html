@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDL Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .developer-info {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .developer-info strong {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .main-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8fafc;
+            padding: 24px 32px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .input-section {
+            padding: 32px;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 16px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            color: #1e293b;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            line-height: 1.5;
+        }
+
+        .question-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .response-section {
+            margin-top: 32px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .response-section.show {
+            display: block;
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 32px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .response-title {
+            color: #1e293b;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .verification-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .verification-badge.verified {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .verification-badge.unverified {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fed7aa;
+        }
+
+        .code-container {
+            background: #0f172a;
+            border-radius: 0 0 16px 16px;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+        }
+
+        .code-language {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .copy-btn {
+            background: #374151;
+            border: 1px solid #4b5563;
+            color: #e5e7eb;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+
+        .code-content {
+            padding: 24px;
+            color: #e2e8f0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #0f172a;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .developer-info {
+                font-size: 0.8rem;
+            }
+
+            .container {
+                padding: 20px 16px;
+            }
+
+            .section-header, .input-section, .response-header {
+                padding: 20px;
+            }
+
+            .question-input {
+                padding: 14px;
+                min-height: 100px;
+            }
+
+            .submit-btn {
+                padding: 14px;
+            }
+
+            .response-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .app-title {
+                font-size: 1.25rem;
+            }
+
+            .section-header, .input-section {
+                padding: 16px;
+            }
+        }
+
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-icon">TDL</div>
+                <div>
+                    <div class="app-title">TDL Assistant</div>
+                </div>
+            </div>
+            <div class="developer-info">
+                Developed by <strong>Verma Infocomm Pvt Ltd</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-section">
+            <div class="section-header">
+                <h2 class="section-title">Tally Definition Language Code Generator</h2>
+                <p class="section-subtitle">Generate custom TDL code for your Tally customizations</p>
+            </div>
+
+            <div class="input-section">
+                <textarea 
+                    class="question-input" 
+                    id="questionInput" 
+                    placeholder="Describe what you want to create in TDL... 
+
+For example:
+• How do I create a ledger collection?
+• I need a custom validation function
+• Show me how to create a report with forms
+• How to add menu items and buttons?"
+                    rows="6"
+                ></textarea>
+                <button class="submit-btn" onclick="submitQuestion()" id="submitBtn">
+                    <span id="btnText">Generate TDL Code</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="response-section" id="responseSection">
+            <div class="response-header">
+                <div class="response-title">
+                    <span>📝</span>
+                    Generated TDL Code
+                </div>
+                <div class="verification-badge" id="verificationBadge">
+                    <span id="verificationIcon">🔄</span>
+                    <span id="verificationText">Processing...</span>
+                </div>
+            </div>
+            <div class="code-container">
+                <div class="code-header">
+                    <div class="code-language">Tally Definition Language</div>
+                    <button class="copy-btn" onclick="copyCode()">📋 Copy Code</button>
+                </div>
+                <div class="code-content" id="codeContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Using Vercel API endpoint
+        const TDL_API_ENDPOINT = '/api/tally-tdl-assistant';
+
+        function updateVerificationStatus(isVerified) {
+            const badge = document.getElementById('verificationBadge');
+            const icon = document.getElementById('verificationIcon');
+            const text = document.getElementById('verificationText');
+
+            if (isVerified) {
+                badge.className = 'verification-badge verified';
+                icon.textContent = '✅';
+                text.textContent = 'Verified Code';
+            } else {
+                badge.className = 'verification-badge unverified';
+                icon.textContent = '⚠️';
+                text.textContent = 'General Knowledge';
+            }
+        }
+
+        async function submitQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const responseSection = document.getElementById('responseSection');
+            const codeContent = document.getElementById('codeContent');
+
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                questionInput.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    questionInput.style.animation = '';
+                }, 500);
+                questionInput.focus();
+                return;
+            }
+
+            // Update UI for loading state
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<div class="spinner"></div>Generating TDL Code...';
+            responseSection.classList.add('show');
+            
+            // Reset verification status
+            document.getElementById('verificationBadge').className = 'verification-badge';
+            document.getElementById('verificationIcon').textContent = '🔄';
+            document.getElementById('verificationText').textContent = 'Processing...';
+            
+            codeContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Analyzing your question and generating TDL code...
+                </div>
+            `;
+
+            try {
+                const response = await fetch(TDL_API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                const tdlCode = data.tdlCode || 'No TDL code generated.';
+                const isVerified = data.verified || false;
+                
+                // Update verification status
+                updateVerificationStatus(isVerified);
+                
+                // Display code with typing effect
+                codeContent.innerHTML = '';
+                let i = 0;
+                const typeWriter = () => {
+                    if (i < tdlCode.length) {
+                        codeContent.innerHTML += tdlCode.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 8);
+                    }
+                };
+                typeWriter();
+
+            } catch (error) {
+                console.error('Error:', error);
+                
+                updateVerificationStatus(false);
+                codeContent.innerHTML = `
+                    <div class="error">
+                        <strong>⚠️ Error:</strong><br><br>
+                        Sorry, there was an error generating your TDL code. Please check your connection and try again.
+                        <br><br>
+                        <strong>Troubleshooting:</strong><br>
+                        • Make sure your n8n workflow is running<br>
+                        • Verify the webhook URL is correct<br>
+                        • Check that OpenAI API credentials are configured
+                    </div>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Generate TDL Code';
+            }
+        }
+
+        function copyCode() {
+            const codeContent = document.getElementById('codeContent');
+            const text = codeContent.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const copyBtn = document.querySelector('.copy-btn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.style.background = '#059669';
+                copyBtn.style.color = 'white';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '';
+                    copyBtn.style.color = '';
+                }, 2000);
+            });
+        }
+
+        // Allow Enter key to submit (Ctrl+Enter for new line)
+        document.addEventListener('keydown', function(e) {
+            if (e.target.id === 'questionInput' && e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                submitQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
